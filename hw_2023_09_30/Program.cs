@@ -34,6 +34,9 @@ namespace hw_2023_09_30
 
             Console.WriteLine("Список книг, взятых за последнее время:");
             pr.ListOfBooksTakenRecently();
+
+            Console.WriteLine("Количество книг, взятых определённым посетителем за последний год");
+            pr.QuantityBooks();
         }
         public void ListOfDebtors() // список должников
         {
@@ -195,6 +198,30 @@ namespace hw_2023_09_30
             finally
             {
                 rdr?.Close();
+                conn?.Close();
+            }
+        }
+        public void QuantityBooks() // количество книг, взятых определённым посетителем за последний год
+        {
+            try
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand();
+
+                string strQuery = "SELECT COUNT(Book.name)" +
+                    " FROM Book JOIN S_Cards ON Book.id = S_Cards.id_book" +
+                    " JOIN Student ON S_Cards.id_student = Student.id" +
+                    " WHERE Student.id = @idStudent AND S_Cards.date_out > @dateOut";
+
+                cmd.CommandText = strQuery;
+                cmd.Connection = conn;
+                cmd.Parameters.Add("@idStudent", System.Data.SqlDbType.Int).Value = 17;
+                cmd.Parameters.Add("@dateOut", System.Data.SqlDbType.Date).Value = "2022-09-25";
+
+                Console.WriteLine((int)cmd.ExecuteScalar());
+            }
+            finally
+            {
                 conn?.Close();
             }
         }
