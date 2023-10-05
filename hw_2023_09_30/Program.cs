@@ -409,28 +409,5 @@ namespace hw_2023_09_30
                 conn?.Close();
             }
         }
-        public void qq()
-        {
-            //SqlDataReader rdr = null;
-            try
-            {
-                conn.Open();
-                SqlCommand cmd = new SqlCommand();
-
-                string str = "SELECT CONVERT(date, GETDATE())";
-                cmd.CommandText = str;
-                cmd.Connection = conn;
-                //rdr = cmd.ExecuteReader();
-
-                DateTime date = (DateTime)cmd.ExecuteScalar();
-                string strDate = String.Format("{0}-{1:d2}-{2:d2}", date.Year, date.Month, date.Day);
-                Console.WriteLine(strDate);
-            }
-            finally
-            {
-                //rdr?.Close();
-                conn?.Close();
-            }
-        }
     }
 }
