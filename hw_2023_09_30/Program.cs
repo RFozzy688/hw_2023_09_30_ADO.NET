@@ -37,6 +37,15 @@ namespace hw_2023_09_30
 
             Console.WriteLine("Количество книг, взятых определённым посетителем за последний год");
             pr.QuantityBooks();
+
+            Console.WriteLine("Пакетная обработка двух запросов:");
+            pr.BatchProcessing_2_Requests();
+
+            Console.WriteLine("Пакетная обработка трех запросов:");
+            pr.BatchProcessing_3_Requests();
+
+            Console.WriteLine("Обнулите задолженности всех должников:");
+            pr.ClearAllDebts();
         }
         public void ListOfDebtors() // список должников
         {
@@ -47,7 +56,7 @@ namespace hw_2023_09_30
 
                 SqlCommand cmd = new SqlCommand();
 
-                string strQuery = "SELECT Student.first_name, Student.last_name" +
+                string strQuery = "SELECT DISTINCT Student.first_name, Student.last_name" +
                     " FROM Student JOIN S_Cards ON Student.id = S_Cards.id_student" +
                     " WHERE date_in IS NULL";
 
@@ -219,9 +228,207 @@ namespace hw_2023_09_30
                 cmd.Parameters.Add("@dateOut", System.Data.SqlDbType.Date).Value = "2022-09-25";
 
                 Console.WriteLine((int)cmd.ExecuteScalar());
+                Console.WriteLine();
             }
             finally
             {
+                conn?.Close();
+            }
+        }
+        public void BatchProcessing_2_Requests()
+        {
+            SqlDataReader rdr = null;
+
+            try
+            {
+                conn.Open();
+
+                string strQuery = "SELECT Student.first_name, Student.last_name" +
+                    " FROM Student JOIN S_Cards ON Student.id = S_Cards.id_student" +
+                    " WHERE date_in IS NULL;" +
+                    " SELECT Author.first_name, Author.last_name" +
+                    " FROM Author JOIN Book ON Author.id = Book.id_author" +
+                    " WHERE Book.id = @numBook";
+
+                SqlCommand cmd = new SqlCommand();
+                cmd.CommandText = strQuery;
+                cmd.Connection = conn;
+                cmd.Parameters.Add("@numBook", System.Data.SqlDbType.Int).Value = 5;
+
+                rdr = cmd.ExecuteReader();
+
+                int count = 0;
+
+                do
+                {
+                    if (count == 0)
+                    {
+                        Console.WriteLine("Список должников:");
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nСписок авторов книги №5:");
+                    }
+
+                    while (rdr.Read())
+                    {
+                        Console.WriteLine($"{rdr[0]} {rdr[1]}");
+                    }
+
+                    count++;
+
+                } while (rdr.NextResult());
+
+                Console.WriteLine();
+
+            }
+            finally
+            {
+                rdr?.Close();
+                conn?.Close();
+            }
+        }
+        public void BatchProcessing_3_Requests()
+        {
+            SqlDataReader rdr = null;
+
+            try
+            {
+                conn.Open();
+
+                string strQuery = "SELECT Student.first_name, Student.last_name" +
+                    " FROM Student JOIN S_Cards ON Student.id = S_Cards.id_student" +
+                    " WHERE date_in IS NULL;" +
+                    " SELECT Author.first_name, Author.last_name" +
+                    " FROM Author JOIN Book ON Author.id = Book.id_author" +
+                    " WHERE Book.id = @numBook;" +
+                    " SELECT Book.name" +
+                    " FROM Book" +
+                    " WHERE Book.quantity > 0";
+
+                SqlCommand cmd = new SqlCommand();
+                cmd.CommandText = strQuery;
+                cmd.Connection = conn;
+                cmd.Parameters.Add("@numBook", System.Data.SqlDbType.Int).Value = 5;
+
+                rdr = cmd.ExecuteReader();
+
+                int count = 0;
+
+                do
+                {
+                    if (count == 0)
+                    {
+                        Console.WriteLine("Список должников:");
+                    }
+                    else if (count == 1)
+                    {
+                        Console.WriteLine("\nСписок авторов книги №5:");
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nСписок доступных книг:");
+                    }
+
+                    while (rdr.Read())
+                    {
+                        if (rdr.FieldCount == 2)
+                        {
+                            Console.WriteLine($"{rdr[0]} {rdr[1]}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{rdr[0]}");
+                        }
+                    }
+
+                    count++;
+
+                } while (rdr.NextResult());
+
+                Console.WriteLine();
+
+            }
+            finally
+            {
+                rdr?.Close();
+                conn?.Close();
+            }
+        }
+        public void ClearAllDebts()
+        {
+            SqlDataReader rdr = null;
+
+            try
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand();
+                SqlCommand cmdUpdate = new SqlCommand();
+                cmd.Connection = conn;
+                cmdUpdate.Connection = conn;
+
+                string strQuery = "SELECT CONVERT(date, GETDATE())";
+                cmd.CommandText = strQuery;
+                DateTime date = (DateTime)cmd.ExecuteScalar();
+                string strDateNow = String.Format("{0}-{1:d2}-{2:d2}", date.Year, date.Month, date.Day);
+
+                strQuery = "SELECT S_Cards.id" +
+                    " FROM S_Cards" +
+                    " WHERE S_Cards.date_in IS NULL";
+
+                cmd.CommandText = strQuery;
+
+                rdr = cmd.ExecuteReader();
+
+                strQuery = "UPDATE S_Cards" +
+                    " SET S_Cards.date_in = @dateIn" +
+                    " WHERE S_Cards.id = @id";
+
+                cmdUpdate.CommandText = strQuery;
+                cmdUpdate.Parameters.Add("@dateIn", System.Data.SqlDbType.Date).Value = strDateNow;
+
+                List<int> id = new List<int>();
+                while (rdr.Read())
+                {
+                    id.Add((int)rdr[0]);
+                }
+                rdr?.Close();
+                
+                for (int i = 0; i < id.Count; i++) 
+                {
+                    cmdUpdate.Parameters.Add("@id", System.Data.SqlDbType.Int).Value = id[i];
+                    cmdUpdate.ExecuteNonQuery();
+                    cmdUpdate.Parameters.RemoveAt(1);
+                }
+
+                Console.WriteLine();
+            }
+            finally
+            {
+                rdr?.Close();
+                conn?.Close();
+            }
+        }
+        public void qq()
+        {
+            //SqlDataReader rdr = null;
+            try
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand();
+
+                string str = "SELECT CONVERT(date, GETDATE())";
+                cmd.CommandText = str;
+                cmd.Connection = conn;
+                //rdr = cmd.ExecuteReader();
+
+                DateTime date = (DateTime)cmd.ExecuteScalar();
+                string strDate = String.Format("{0}-{1:d2}-{2:d2}", date.Year, date.Month, date.Day);
+                Console.WriteLine(strDate);
+            }
+            finally
+            {
+                //rdr?.Close();
                 conn?.Close();
             }
         }
